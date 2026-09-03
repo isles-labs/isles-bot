@@ -12,7 +12,7 @@
   "dependencies": {
     "@auto-bot/browser": "workspace:*",
     "@auto-bot/core": "workspace:*",
-    "playwright-core": "^1.54.0",
-    "tsx": "^4.20.5"
+    "playwright-core": "1.60.0",
+    "tsx": "4.22.0"
   }
 }

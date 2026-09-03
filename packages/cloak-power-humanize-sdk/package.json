@@ -11,6 +11,6 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "playwright-core": "^1.54.0"
+    "playwright-core": "1.60.0"
   }
 }
