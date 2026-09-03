@@ -80,7 +80,7 @@ export const parseTradeRow = (cells: readonly string[], className = '', rowText 
 };
 
 // Use a raw browser expression instead of a TypeScript function. Script Center's
-// tsx runtime can add Node-only naming helpers when serializing page functions.
+// The Node runtime can add naming helpers when serializing page functions.
 const latestTradePageExpression = (rootSelector: string) => String.raw`(() => {
   const rootSelector = ${JSON.stringify(rootSelector)};
   const containers = Array.from(document.querySelectorAll(rootSelector)).filter(node => {

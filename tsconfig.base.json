@@ -10,10 +10,6 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "types": ["node"],
-    "baseUrl": ".",
-    "paths": {
-      "@auto-bot/*": ["packages/*/src/index.ts"]
-    }
+    "types": ["node"]
   }
 }

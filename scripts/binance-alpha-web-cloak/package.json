@@ -6,13 +6,12 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "pnpm exec tsx --test src/*.test.ts src/**/*.test.ts",
-    "dev": "pnpm exec tsx src/index.ts"
+    "prestart": "pnpm -r --filter @auto-bot/script-binance-alpha-web-cloak... run build",
+    "start": "node dist/index.js"
   },
   "dependencies": {
     "@auto-bot/browser": "workspace:*",
     "@auto-bot/core": "workspace:*",
-    "playwright-core": "1.60.0",
-    "tsx": "4.22.0"
+    "playwright-core": "1.60.0"
   }
 }

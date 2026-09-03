@@ -227,7 +227,7 @@ const buildStabilityGateConfig = (context: CloakScriptContext, tokenSymbol: stri
 export default defineCloakScript({
   id: 'binance-alpha-web-cloak', name: 'Binance Alpha 网页策略交易（脚本中心）', version: '0.4.0', type: 'window-job',
   execution: {targets: ['local'], requiresWindow: true, windowConcurrency: 1, closeWindowOnSuccess: false},
-  runner: {command: 'pnpm', args: ['--filter', '@auto-bot/script-binance-alpha-web-cloak', 'exec', 'tsx', 'src/index.ts']},
+  runner: {command: 'pnpm', args: ['--filter', '@auto-bot/script-binance-alpha-web-cloak', 'run', 'start']},
   steps: [
     {id: 'prepare-window', label: '准备 Binance Alpha 页面'},
     {id: 'inspect-history', label: '核对今日历史委托'},

@@ -11,7 +11,7 @@
   },
   "runner": {
     "command": "pnpm",
-    "args": ["--filter", "@auto-bot/script-binance-alpha-web-cloak", "exec", "tsx", "src/index.ts"]
+    "args": ["--filter", "@auto-bot/script-binance-alpha-web-cloak", "run", "start"]
   },
   "config": [
     {"key": "humanizePreset", "label": "网页操作拟人化强度", "type": "select", "scope": "script", "required": true, "default": "normal", "options": [{"value": "normal", "label": "标准"}, {"value": "careful", "label": "谨慎"}], "description": "为点击、输入和页面操作增加随机延迟；不改变订单价格、数量或状态判断。"},
