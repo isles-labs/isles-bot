@@ -1,0 +1,18 @@
+{
+  "name": "@auto-bot/browser",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "pnpm exec tsx --test src/**/*.test.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@liwenguan/cloak-power-humanize-sdk": "workspace:*",
+    "playwright-core": "^1.54.0"
+  }
+}

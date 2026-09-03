@@ -1,0 +1,117 @@
+{
+  "id": "binance-alpha-web-cloak",
+  "name": "Binance Alpha 网页策略交易（脚本中心）",
+  "version": "0.4.7",
+  "type": "window-job",
+  "execution": {
+    "targets": ["local"],
+    "requiresWindow": true,
+    "windowConcurrency": 1,
+    "closeWindowOnSuccess": false
+  },
+  "runner": {
+    "command": "pnpm",
+    "args": ["--filter", "@auto-bot/script-binance-alpha-web-cloak", "exec", "tsx", "src/index.ts"]
+  },
+  "config": [
+    {"key": "humanizePreset", "label": "网页操作拟人化强度", "type": "select", "scope": "script", "required": true, "default": "normal", "options": [{"value": "normal", "label": "标准"}, {"value": "careful", "label": "谨慎"}], "description": "为点击、输入和页面操作增加随机延迟；不改变订单价格、数量或状态判断。"},
+    {"key": "strategyWindowSeconds", "label": "策略行情窗口（秒）", "type": "integer", "scope": "script", "required": true, "default": 30, "validation": {"min": 5, "max": 300}},
+    {"key": "minimumSamples", "label": "最小成交样本数", "type": "integer", "scope": "script", "required": true, "default": 5, "validation": {"min": 3, "max": 100}},
+    {"key": "strategyTimeoutMs", "label": "等待策略信号超时（毫秒）", "type": "integer", "scope": "script", "required": true, "default": 300000, "validation": {"min": 1000}, "allowRunOverride": true},
+    {"key": "minimumStability", "label": "最低稳定度", "type": "select", "scope": "script", "required": true, "default": "一般", "options": [{"value": "稳定", "label": "稳定"}, {"value": "一般", "label": "一般"}, {"value": "不稳", "label": "不稳"}]},
+    {"key": "maximumForecastWear", "label": "最高预估磨损（每1000U往返，U）", "type": "decimal", "scope": "script", "required": true, "default": 0.26, "validation": {"min": 0}},
+    {"key": "uptrendThreshold", "label": "上升趋势信心阈值", "type": "decimal", "scope": "script", "required": true, "default": 0.58, "validation": {"min": 0, "max": 1}, "allowRunOverride": true},
+    {"key": "sidewaysThreshold", "label": "横盘趋势信心阈值", "type": "decimal", "scope": "script", "required": true, "default": 0.62, "validation": {"min": 0, "max": 1}, "allowRunOverride": true},
+    {"key": "minVolatilityPercent", "label": "上升趋势最低波动率（%）", "type": "decimal", "scope": "script", "required": true, "default": 0.008, "validation": {"min": 0}},
+    {"key": "maxVolatilityPercent", "label": "上升趋势最高波动率（%）", "type": "decimal", "scope": "script", "required": true, "default": 0.05, "validation": {"min": 0}},
+    {"key": "sidewaysMaxRangePercent", "label": "横盘最大振幅（%）", "type": "decimal", "scope": "script", "required": true, "default": 0.015, "validation": {"min": 0}},
+    {"key": "targetSpreadBps", "label": "策略目标价差（基点）", "type": "decimal", "scope": "script", "required": true, "default": 0.5, "validation": {"min": 0}},
+    {"key": "buyPriceOffsetBps", "label": "限价买入偏移（基点）", "type": "decimal", "scope": "script", "required": true, "default": 10, "validation": {"min": 0}, "allowRunOverride": true},
+    {"key": "sellPriceOffsetBps", "label": "反向限价卖出偏移（基点）", "type": "decimal", "scope": "script", "required": true, "default": 10, "validation": {"min": 0}, "allowRunOverride": true},
+    {"key": "autoConfirm", "label": "自动点击网页确认", "type": "boolean", "scope": "script", "required": true, "default": false, "description": "关闭时需由操作员在页面确认订单；开启后脚本会尝试点击网页确认按钮。", "allowRunOverride": true},
+    {"key": "enableWebSocketFeed", "label": "启用网页行情 WebSocket 监听", "type": "boolean", "scope": "script", "required": true, "default": true, "description": "优先从当前页面已建立的公开行情 WebSocket 消息读取价格和数量；无可用消息时回退到成交记录 DOM。运行日志会记录当前实际数据源。"},
+    {"key": "navigationRetryTimeoutMs", "label": "页面导航瞬态错误重试窗口（毫秒）", "type": "integer", "scope": "script", "required": true, "default": 3000, "validation": {"min": 0, "max": 60000}, "description": "仅对连接被关闭、重置、拒绝或超时的导航错误重试；窗口内仍失败才中止。"},
+    {"key": "pollIntervalMs", "label": "页面轮询间隔（毫秒）", "type": "integer", "scope": "script", "required": true, "default": 1000, "validation": {"min": 100, "max": 10000}},
+    {"key": "orderResultTimeoutMs", "label": "订单成交核验超时（毫秒）", "type": "integer", "scope": "script", "required": true, "default": 30000, "validation": {"min": 1000}, "allowRunOverride": true},
+    {"key": "toastOnlyWindowMs", "label": "成交提示快速核验窗口（毫秒）", "type": "integer", "scope": "script", "required": true, "default": 5000, "validation": {"min": 100}, "allowRunOverride": true},
+    {"key": "orderSubmitRetries", "label": "买入按钮最大重试次数", "type": "integer", "scope": "script", "required": true, "default": 3, "validation": {"min": 1, "max": 10}},
+    {"key": "tradeTabSelector", "label": "成交记录标签选择器", "type": "text", "scope": "script", "required": true, "default": "#bn-tab-transactions"},
+    {"key": "tradePanelSelector", "label": "成交记录面板选择器", "type": "text", "scope": "script", "required": true, "default": "#bn-tab-pane-transactions"},
+    {"key": "tradeListSelector", "label": "成交列表选择器", "type": "text", "scope": "script", "required": true, "default": "div[aria-label='grid'].ReactVirtualized__List .ReactVirtualized__Grid__innerScrollContainer"},
+    {"key": "orderFormSelector", "label": "订单表单选择器", "type": "text", "scope": "script", "required": true, "default": "div.md\\:rounded-\\[8px\\]:has(#limitPrice), form:has(#limitPrice)"},
+    {"key": "limitPriceSelector", "label": "限价买入价格选择器", "type": "text", "scope": "script", "required": true, "default": "#limitPrice, input[name*='price' i]"},
+    {"key": "reverseSellPriceSelector", "label": "反向卖出价格选择器", "type": "text", "scope": "script", "required": true, "default": "input[placeholder*='限价卖'], input[name*='sell' i]"},
+    {"key": "turnoverSelector", "label": "成交额输入框选择器", "type": "text", "scope": "script", "required": true, "default": "#limitTotal, input[name*='total' i]"},
+    {"key": "buyButtonSelector", "label": "买入按钮选择器", "type": "text", "scope": "script", "required": true, "default": "button[class*='buy' i], .bn-button__buy"},
+    {"key": "sellButtonSelector", "label": "卖出按钮选择器", "type": "text", "scope": "script", "required": true, "default": "button:has-text('卖出'), button[class*='sell' i]"},
+    {"key": "sellQuantitySelector", "label": "卖出数量输入框选择器", "type": "text", "scope": "script", "required": true, "default": "#limitAmount, input[name*='quantity' i], input[placeholder*='数量']"},
+    {"key": "buyTabSelector", "label": "买入 Tab 选择器", "type": "text", "scope": "script", "required": true, "default": "[role='tab']:has-text('买入')"},
+    {"key": "sellTabSelector", "label": "卖出 Tab 选择器", "type": "text", "scope": "script", "required": true, "default": "[role='tab']:has-text('卖出')"},
+    {"key": "tokenSymbol", "label": "当前市场代币符号", "type": "text", "scope": "script", "required": true, "description": "必须与窗口市场地址对应；用于过滤历史委托，避免统计其他市场的订单。"},
+    {"key": "securityVerificationSelector", "label": "安全验证页面选择器", "type": "text", "scope": "script", "required": true, "default": "[data-e2e='page-title']:has-text('安全验证')", "description": "命中时立即停止交易，并提示当前账户需要重新登录。"},
+    {"key": "reverseOrderText", "label": "反向订单文案", "type": "text", "scope": "script", "required": true, "default": "反向订单"},
+    {"key": "confirmButtonText", "label": "网页确认按钮文案", "type": "text", "scope": "script", "required": true, "default": "确认"},
+    {"key": "confirmButtonTimeoutMs", "label": "自动确认按钮等待（毫秒）", "type": "integer", "scope": "script", "required": true, "default": 15000, "validation": {"min": 1000, "max": 60000}, "description": "开启自动点击网页确认后，等待可见且可点击确认按钮的最长时间。"},
+    {"key": "formControlTimeoutMs", "label": "下单输入框等待（毫秒）", "type": "integer", "scope": "script", "required": true, "default": 15000, "validation": {"min": 1000, "max": 60000}, "description": "等待限价和成交额输入框变为可见、启用且可编辑的最长时间。"},
+    {"key": "buyFilledText", "label": "买单成交提示文案", "type": "text", "scope": "script", "required": true, "default": "限价买单已成交"},
+    {"key": "sellFilledText", "label": "卖单成交提示文案", "type": "text", "scope": "script", "required": true, "default": "限价卖单已成交"},
+    {"key": "balanceSelector", "label": "可用余额选择器", "type": "text", "scope": "script", "required": true, "default": "div.bn-flex.text-TertiaryText.items-center.justify-between.w-full:has-text('可用')", "description": "定位包含可用余额的整行。默认匹配 Binance Alpha 当前页面结构。"},
+    {"key": "balanceText", "label": "可用余额文案", "type": "text", "scope": "script", "required": true, "default": "可用"},
+    {"key": "balanceAssetSymbol", "label": "交易金额余额币种", "type": "text", "scope": "script", "required": true, "default": "USDT", "description": "仅匹配该币种的可用余额；每轮成交额使用该币种计价。"},
+    {"key": "balanceReadTimeoutMs", "label": "可用余额读取等待（毫秒）", "type": "integer", "scope": "script", "required": true, "default": 10000, "validation": {"min": 0, "max": 60000}, "description": "等待余额异步加载的最长时间。"},
+    {"key": "requireBalanceCheck", "label": "下单前必须读取余额", "type": "boolean", "scope": "script", "required": true, "default": true, "description": "开启时，未能读到指定币种余额会中止，避免余额未知时下单。仅在已人工核对页面布局后才关闭。"}
+    ,{"key": "sellOrderTimeoutMs", "label": "卖单超时（毫秒）", "type": "integer", "scope": "script", "required": true, "default": 30000, "validation": {"min": 1000}, "allowRunOverride": true}
+    ,{"key": "maxRepriceAttempts", "label": "卖单最大重挂次数", "type": "integer", "scope": "script", "required": true, "default": 2, "validation": {"min": 0, "max": 20}, "allowRunOverride": true}
+    ,{"key": "repriceStepBps", "label": "每次重挂价格步长（基点）", "type": "decimal", "scope": "script", "required": true, "default": 5, "validation": {"min": 0}, "allowRunOverride": true}
+    ,{"key": "maxAllowedLossBps", "label": "最大允许亏损（基点）", "type": "decimal", "scope": "script", "required": true, "default": 10, "validation": {"min": 0}, "allowRunOverride": true}
+    ,{"key": "partialFillPolicy", "label": "部分成交处理策略", "type": "select", "scope": "script", "required": true, "default": "cancel-remainder-and-sell-filled", "options": [{"value": "cancel-remainder-and-sell-filled", "label": "撤剩余并卖出已成交"}, {"value": "manual-stop", "label": "转人工处理"}]}
+    ,{"key": "cancelTimeoutMs", "label": "撤单确认超时（毫秒）", "type": "integer", "scope": "script", "required": true, "default": 10000, "validation": {"min": 1000}, "allowRunOverride": true}
+    ,{"key": "orderPollIntervalMs", "label": "订单状态轮询间隔（毫秒）", "type": "integer", "scope": "script", "required": true, "default": 1000, "validation": {"min": 100, "max": 10000}}
+    ,{"key": "unknownStatePolicy", "label": "未知订单状态处理策略", "type": "select", "scope": "script", "required": true, "default": "retry-observe", "options": [{"value": "manual-stop", "label": "立即转人工处理"}, {"value": "retry-observe", "label": "短暂重试读取"}], "description": "页面订单状态短暂未刷新或数量暂时不可读时，保持观察并按订单状态轮询间隔重试；不会因未知状态自动撤单或重挂。"}
+    ,{"key": "autoRecoverUnfilledSell", "label": "自动恢复未成交卖单", "type": "boolean", "scope": "script", "required": true, "default": true, "allowRunOverride": true}
+    ,{"key": "orderTableSelector", "label": "当前委托订单表选择器", "type": "text", "scope": "script", "required": true, "default": "div.bn-web-table-container:has(th[aria-colindex='7'])"}
+    ,{"key": "positionTableSelector", "label": "持仓列表选择器", "type": "text", "scope": "script", "required": true, "default": "div.bn-web-table-container:has(th[aria-colindex='3']):has(th:has-text('代币'))"}
+  ],
+  "secrets": [],
+  "steps": [
+    {"id": "prepare-window", "label": "准备 Binance Alpha 页面"},
+    {"id": "inspect-history", "label": "核对今日历史委托"},
+    {"id": "monitor-market", "label": "监听市场并等待策略信号"},
+    {"id": "submit-order", "label": "提交反向限价订单"},
+    {"id": "verify-result", "label": "核验买卖订单成交"},
+    {"id": "write-result", "label": "写回执行结果"}
+  ],
+  "dataModel": {
+    "tables": [{
+      "id": "window-state",
+      "name": "窗口执行数据",
+      "recordKey": "window_name",
+      "fields": [
+        {"key": "marketUrl", "label": "Binance Alpha 市场地址", "type": "text", "scope": "window", "direction": "input", "required": true},
+        {"key": "transactionAmount", "label": "每轮成交额", "type": "decimal", "scope": "window", "direction": "input", "required": true},
+        {"key": "targetAccumulatedVolume", "label": "目标累积交易量", "type": "decimal", "scope": "window", "direction": "input", "required": true, "validation": {"min": 0.00000001}},
+        {"key": "accumulatedVolume", "label": "当前实际累积交易量", "type": "decimal", "scope": "window", "direction": "output"},
+        {"key": "completedDate", "label": "统计日期", "type": "date", "scope": "window", "direction": "output"},
+        {"key": "initialBalance", "label": "开始可用余额", "type": "decimal", "scope": "window", "direction": "output"},
+        {"key": "finalBalance", "label": "结束可用余额", "type": "decimal", "scope": "window", "direction": "output"},
+        {"key": "wear", "label": "本次损耗", "type": "decimal", "scope": "window", "direction": "output"},
+        {"key": "businessStatus", "label": "业务状态", "type": "status", "scope": "window", "direction": "output"},
+        {"key": "lastStrategy", "label": "最近策略判断", "type": "long_text", "scope": "window", "direction": "output"},
+        {"key": "lastError", "label": "最近错误", "type": "long_text", "scope": "window", "direction": "output"},
+        {"key": "lastRunAt", "label": "最近执行时间", "type": "datetime", "scope": "window", "direction": "output"}
+      ]
+    }]
+  },
+  "metrics": [
+    {"key": "volume", "label": "交易量", "type": "number", "aggregation": "sum"},
+    {"key": "wear", "label": "损耗", "type": "number", "unit": "USDT", "aggregation": "sum"},
+    {"key": "failedRuns", "label": "运行失败次数", "type": "integer", "aggregation": "sum"}
+  ],
+  "actions": [{
+    "id": "run",
+    "label": "执行 Binance Alpha 网页交易",
+    "scope": "selected_records",
+    "confirmation": "将对所选已登录 Binance Alpha 窗口提交真实限价买单和反向卖单。请确认市场、每轮成交额、目标累积交易量与自动确认设置。",
+    "risk": "high"
+  }]
+}

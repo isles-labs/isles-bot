@@ -1,0 +1,18 @@
+{
+  "name": "@auto-bot/script-binance-alpha-web-cloak",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "pnpm exec tsx --test src/*.test.ts src/**/*.test.ts",
+    "dev": "pnpm exec tsx src/index.ts"
+  },
+  "dependencies": {
+    "@auto-bot/browser": "workspace:*",
+    "@auto-bot/core": "workspace:*",
+    "playwright-core": "^1.54.0",
+    "tsx": "^4.20.5"
+  }
+}
