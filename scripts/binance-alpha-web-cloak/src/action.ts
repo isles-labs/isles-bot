@@ -107,26 +107,26 @@ const latestTradePageExpression = (rootSelector: string) => String.raw`(() => {
   return null;
 })()`;
 
-const installWebSocketTradeFeed = () => {
+const installWebSocketTradeFeedScript = String.raw`(() => {
   const queueKey = '__autoBotBinanceAlphaWsMessages';
-  if (Array.isArray((window as unknown as Record<string, unknown>)[queueKey])) return;
-  const messages: Array<{data: string; at: number}> = [];
+  if (Array.isArray(window[queueKey])) return;
+  const messages = [];
   const NativeWebSocket = window.WebSocket;
-  function capture(data: unknown) {
+  function capture(data) {
     if (typeof data !== 'string') return;
     messages.push({data, at: Date.now()});
     if (messages.length > 500) messages.splice(0, messages.length - 500);
   }
-  function HookedWebSocket(url: string | URL, protocols?: string | string[]) {
+  function HookedWebSocket(url, protocols) {
     const socket = protocols === undefined ? new NativeWebSocket(url) : new NativeWebSocket(url, protocols);
     socket.addEventListener('message', event => capture(event.data));
     return socket;
   }
   HookedWebSocket.prototype = NativeWebSocket.prototype;
   Object.setPrototypeOf(HookedWebSocket, NativeWebSocket);
-  window.WebSocket = HookedWebSocket as unknown as typeof WebSocket;
-  (window as unknown as Record<string, unknown>)[queueKey] = messages;
-};
+  window.WebSocket = HookedWebSocket;
+  window[queueKey] = messages;
+})()`;
 
 const webSocketTradePageExpression = String.raw`(() => {
   const messages = window.__autoBotBinanceAlphaWsMessages;
@@ -217,7 +217,7 @@ export class BinanceAlphaWebAction {
 
   async openMarket(page: Page, marketUrl: string) {
     if (!/^https:\/\/www\.binance\.com\//.test(marketUrl)) throw new AlphaPageStateError('市场地址必须是 https://www.binance.com/ 下的页面');
-    if (this.config.enableWebSocketFeed) await page.addInitScript(installWebSocketTradeFeed);
+    if (this.config.enableWebSocketFeed) await page.addInitScript({content: installWebSocketTradeFeedScript});
     await gotoWithTransientRetry(page, marketUrl, {
       timeoutMs: 60_000,
       retryWindowMs: this.config.navigationRetryTimeoutMs,
