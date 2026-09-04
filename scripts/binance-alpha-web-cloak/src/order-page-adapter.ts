@@ -59,17 +59,18 @@ const historyCreatedAt = (value: string): number | undefined => {
   return Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour) - 9, Number(minute), Number(second));
 };
 
-// Raw browser expressions avoid runtime serializer and obfuscator helper pollution.
-const readOrderRowsPageExpression = String.raw`elements => elements.map(element => ({
+// Self-contained Function instances avoid runtime serializer/obfuscator pollution while
+// ensuring Playwright flags isFunction=true to pass element arguments into the evaluator.
+const readOrderRowsFunction = new Function('elements', String.raw`return elements.map(element => ({
   id: element.getAttribute('data-row-key') || '',
   cells: Array.from(element.querySelectorAll('td[role="cell"]')).map(cell => (cell.innerText || cell.textContent || '').trim()),
-}))`;
+}));`) as (elements: Element[]) => Array<{id: string; cells: string[]}>;
 
-const scrollResetPageExpression = String.raw`element => { element.scrollTop = 0; }`;
+const scrollResetFunction = new Function('element', String.raw`element.scrollTop = 0;`) as (element: HTMLElement) => void;
 
-const scrollMetricsPageExpression = String.raw`element => ({top: element.scrollTop, height: element.scrollHeight, client: element.clientHeight})`;
+const scrollMetricsFunction = new Function('element', String.raw`return {top: element.scrollTop, height: element.scrollHeight, client: element.clientHeight};`) as (element: HTMLElement) => {top: number; height: number; client: number};
 
-const scrollStepPageExpression = String.raw`element => { element.scrollTop += element.clientHeight * 0.8; }`;
+const scrollStepFunction = new Function('element', String.raw`element.scrollTop += element.clientHeight * 0.8;`) as (element: HTMLElement) => void;
 
 const statusFromText = (text: string): OrderStatus => {
   if (/完全成交|已成交|filled/i.test(text)) return 'filled';
@@ -278,7 +279,7 @@ export class BinanceAlphaOrderPageAdapter {
 
   async readOrders(page: Page): Promise<{buy?: OrderSnapshot; sell?: OrderSnapshot; rows: OrderRowEvidence[]}> {
     await this.switchOrderTab(page, 'current');
-    const rows = await page.locator(this.currentOrderRowsSelector()).evaluateAll(readOrderRowsPageExpression) as Array<{id: string; cells: string[]}>;
+    const rows = await page.locator(this.currentOrderRowsSelector()).evaluateAll(readOrderRowsFunction) as Array<{id: string; cells: string[]}>;
     const evidence = rows.map(parseOrderRow).filter((row): row is OrderRowEvidence => row !== null);
     const buy = evidence.find(row => row.side === 'buy');
     const sell = evidence.find(row => row.side === 'sell');
@@ -318,7 +319,7 @@ export class BinanceAlphaOrderPageAdapter {
     // structure. Scope directly to the selected History tab instead of
     // reusing the configurable current-order table selector.
     const rowSelector = '#bn-tab-pane-orderHistory tr[role="row"][data-row-key]';
-    const readVisibleRows = () => page.locator(rowSelector).evaluateAll(readOrderRowsPageExpression) as Promise<Array<{id: string; cells: string[]}>>;
+    const readVisibleRows = () => page.locator(rowSelector).evaluateAll(readOrderRowsFunction) as Promise<Array<{id: string; cells: string[]}>>;
     const historyPanel = page.locator('#bn-tab-pane-orderHistory').first();
     const loadDeadline = Date.now() + this.config.historyLoadTimeoutMs;
     while (Date.now() <= loadDeadline) {
@@ -332,7 +333,7 @@ export class BinanceAlphaOrderPageAdapter {
     }
     const body = historyPanel.locator('.bn-web-table-body').first();
     if (scanAll && await body.count()) {
-      await body.evaluate(scrollResetPageExpression);
+      await body.evaluate(scrollResetFunction);
       await page.waitForTimeout(this.config.pollIntervalMs);
     }
     const rows = await readVisibleRows();
@@ -361,7 +362,7 @@ export class BinanceAlphaOrderPageAdapter {
       reachedEarlierBusinessDate = hasReachedEarlierHistoryBusinessDate(nextEvidence, businessDate);
     };
     while (await body.count() && !reachedEarlierBusinessDate) {
-      const scroll = await body.evaluate(scrollMetricsPageExpression) as {top: number; height: number; client: number};
+      const scroll = await body.evaluate(scrollMetricsFunction) as {top: number; height: number; client: number};
       const visibleIds = new Set(currentVisibleRows.map(row => row.id).filter(Boolean));
       if (scroll.top + scroll.client >= scroll.height - 2) {
         const nextRows = await waitForNewVisibleRows(visibleIds);
@@ -369,13 +370,13 @@ export class BinanceAlphaOrderPageAdapter {
         collectVisibleRows(nextRows);
         continue;
       }
-      await body.evaluate(scrollStepPageExpression);
+      await body.evaluate(scrollStepFunction);
       await page.waitForTimeout(this.config.pollIntervalMs);
       let nextRows = await readVisibleRows();
-      let nextScroll = await body.evaluate(scrollMetricsPageExpression) as {top: number; height: number; client: number};
+      let nextScroll = await body.evaluate(scrollMetricsFunction) as {top: number; height: number; client: number};
       if (!hasNewVisibleRows(nextRows, visibleIds) && (nextScroll.top + nextScroll.client >= nextScroll.height - 2 || nextScroll.top <= scroll.top)) {
         nextRows = await waitForNewVisibleRows(visibleIds);
-        nextScroll = await body.evaluate(scrollMetricsPageExpression) as {top: number; height: number; client: number};
+        nextScroll = await body.evaluate(scrollMetricsFunction) as {top: number; height: number; client: number};
       }
       if (hasNewVisibleRows(nextRows, visibleIds)) {
         collectVisibleRows(nextRows);
