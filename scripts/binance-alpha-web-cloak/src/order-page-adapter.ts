@@ -120,11 +120,15 @@ export const findSubmittedOrders = (rows: OrderRowEvidence[], input: {token: str
   const lowerBound = input.startedAt - 15_000;
   const upperBound = input.finishedAt + 60_000;
   const matches = (row: OrderRowEvidence, side: OrderSide, price: number) => {
-    if (row.side !== side || row.price === null || Math.abs(row.price - price) / price > 0.0002) return false;
+    // Binance rounds low unit-price token orders (e.g. KII ~0.07) to the market tick size,
+    // which can exceed 2 bps. Allow up to 0.5% relative deviation or 0.0002 absolute difference.
+    if (row.side !== side || row.price === null) return false;
+    const priceDeviation = Math.abs(row.price - price) / price;
+    if (priceDeviation > 0.005 && Math.abs(row.price - price) > 0.0002) return false;
     if (token && row.token?.trim().toUpperCase() !== token) return false;
     if (row.createdAt !== undefined && (row.createdAt < lowerBound || row.createdAt > upperBound)) return false;
-    const turnover = row.requestedQty === null ? null : row.requestedQty * row.price;
-    return turnover === null || Math.abs(turnover - input.amount) / input.amount <= 0.03;
+    const turnover = row.turnover ?? (row.requestedQty === null ? null : row.requestedQty * row.price);
+    return turnover === null || Math.abs(turnover - input.amount) / input.amount <= 0.05;
   };
   return {buy: rows.find(row => matches(row, 'buy', input.buyPrice)), sell: rows.find(row => matches(row, 'sell', input.sellPrice))};
 };
