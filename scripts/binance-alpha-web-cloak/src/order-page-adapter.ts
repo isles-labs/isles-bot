@@ -191,25 +191,26 @@ export type CurrentMarketVolumeSummary = {
   unpairedBuyOrderIds: string[];
 };
 
-/** Summarizes completed current-market rounds without treating sell turnover as volume. */
+/** Summarizes completed current-market rounds without treating sell turnover as volume.
+ * When tokenSymbol is omitted or empty, all tokens traded today are paired and accumulated.
+ */
 export const summarizeCurrentMarketVolume = (
   rows: readonly OrderRowEvidence[],
   date: string,
-  tokenSymbol: string,
+  tokenSymbol?: string,
 ): CurrentMarketVolumeSummary => {
-  const token = tokenSymbol.trim().toUpperCase();
+  const allowedToken = tokenSymbol?.trim().toUpperCase();
   const summary: CurrentMarketVolumeSummary = {
     completedBuyOrderIds: [], accumulatedVolume: 0,
     buyTurnover: 0, sellTurnover: 0,
     unreadableCompletedBuyOrderIds: [], unpairedBuyOrderIds: [],
   };
-  if (!token) return summary;
 
   const currentMarketRows = rows
     .filter(row => row.status === 'filled'
       && row.createdAt !== undefined
       && historyBusinessDate(new Date(row.createdAt)) === date
-      && row.token?.trim().toUpperCase() === token)
+      && (!allowedToken || row.token?.trim().toUpperCase() === allowedToken))
     .sort((left, right) => {
       const timestampDifference = (left.createdAt ?? 0) - (right.createdAt ?? 0);
       if (timestampDifference !== 0) return timestampDifference;
@@ -218,14 +219,17 @@ export const summarizeCurrentMarketVolume = (
       if (Number.isSafeInteger(leftOrderId) && Number.isSafeInteger(rightOrderId)) return leftOrderId - rightOrderId;
       return left.id.localeCompare(right.id);
     });
-  const unpairedBuys: OrderRowEvidence[] = [];
+  const unpairedBuysByToken = new Map<string, OrderRowEvidence[]>();
 
   for (const row of currentMarketRows) {
+    const rowToken = row.token?.trim().toUpperCase() ?? '';
+    const tokenBuys = unpairedBuysByToken.get(rowToken) ?? [];
     if (row.side === 'buy') {
-      unpairedBuys.push(row);
+      tokenBuys.push(row);
+      unpairedBuysByToken.set(rowToken, tokenBuys);
       continue;
     }
-    const buy = unpairedBuys.shift();
+    const buy = tokenBuys.shift();
     if (!buy) continue;
     summary.completedBuyOrderIds.push(buy.id);
     if (buy.turnover === null || buy.turnover === undefined) summary.unreadableCompletedBuyOrderIds.push(buy.id);
@@ -233,7 +237,7 @@ export const summarizeCurrentMarketVolume = (
     summary.sellTurnover += row.turnover ?? 0;
   }
 
-  summary.unpairedBuyOrderIds = unpairedBuys.map(row => row.id);
+  summary.unpairedBuyOrderIds = Array.from(unpairedBuysByToken.values()).flatMap(buys => buys.map(row => row.id));
   summary.accumulatedVolume = Number(summary.buyTurnover.toFixed(8));
   summary.buyTurnover = summary.accumulatedVolume;
   summary.sellTurnover = Number(summary.sellTurnover.toFixed(8));

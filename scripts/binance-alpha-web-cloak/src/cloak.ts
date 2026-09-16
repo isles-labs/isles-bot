@@ -300,7 +300,7 @@ export default defineCloakScript({
 
       await context.steps.start('inspect-history');
       const historyRows = await orderAdapter.readHistoryOrders(page);
-      const historySummary = summarizeCurrentMarketVolume(historyRows, runDate, tokenSymbol);
+      const historySummary = summarizeCurrentMarketVolume(historyRows, runDate);
       if (historySummary.unpairedBuyOrderIds.length > 0) {
         throw new Error(`存在未完成历史买单（${historySummary.unpairedBuyOrderIds.join(', ')}），请先人工处理对应持仓和卖单`);
       }
@@ -309,7 +309,7 @@ export default defineCloakScript({
       }
       accumulatedVolume = historySummary.accumulatedVolume;
       initialAccumulatedVolume = accumulatedVolume;
-      context.logger.info('Binance Alpha 当前市场历史成交额统计', {runDate, tokenSymbol, targetAccumulatedVolume, ...historySummary});
+      context.logger.info('Binance Alpha 今日全币种历史成交额统计', {runDate, currentTokenSymbol: tokenSymbol, targetAccumulatedVolume, ...historySummary});
       await persist({completedDate: runDate, accumulatedVolume, businessStatus: accumulatedVolume >= targetAccumulatedVolume ? `${runDate}完成` : `待执行 ${accumulatedVolume}/${targetAccumulatedVolume}`, lastError: ''});
       await context.steps.succeed('inspect-history', {accumulatedVolume, targetAccumulatedVolume});
 
