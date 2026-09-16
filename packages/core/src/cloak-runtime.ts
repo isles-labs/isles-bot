@@ -1,4 +1,5 @@
 import type {CloakScriptContext, CloakScriptDefinition, CloakWindowBinding} from './cloak-script.js';
+import {connectPlaywrightOverCdp} from '@auto-bot/browser';
 
 type RuntimePayload = {
   run?: {id?: string; windowId?: string; windowName?: string};
@@ -159,7 +160,6 @@ export const createCloakRuntimeContext = (): CloakScriptContext => {
         if (!isWindowJob) throw new Error('无窗口任务不能连接指纹窗口');
         const cdpUrl = process.env.CLOAK_SCRIPT_WINDOW_CDP_URL;
         if (!cdpUrl) throw new Error('目标窗口没有可用的浏览器连接');
-        const {connectPlaywrightOverCdp} = await import('@auto-bot/browser');
         return await connectPlaywrightOverCdp(cdpUrl);
       },
     },

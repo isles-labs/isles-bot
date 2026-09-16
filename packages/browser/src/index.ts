@@ -1,4 +1,4 @@
-import type {Browser, BrowserContext, Page} from 'playwright-core';
+import { chromium, type Browser, type BrowserContext, type Page } from 'playwright-core';
 
 export interface BrowserSession {
   browser: Browser;
@@ -8,7 +8,6 @@ export interface BrowserSession {
 }
 
 export async function connectPlaywrightOverCdp(cdpUrl: string): Promise<BrowserSession> {
-  const {chromium} = await import('playwright-core');
   const browser = await chromium.connectOverCDP(cdpUrl);
   const context = browser.contexts()[0] ?? (await browser.newContext());
   const page = context.pages()[0] ?? (await context.newPage());
